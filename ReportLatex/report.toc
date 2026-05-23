@@ -1,0 +1,38 @@
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\contentsline {section}{\numberline {1}Introduzione}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Cos'è un USB Rubber Ducky?}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Obiettivi del Progetto}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Architettura del Sistema}{2}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Hardware e Materiali}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Componenti Utilizzati}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Perché il Raspberry Pi Zero W?}{3}{subsection.2.2}%
+\contentsline {section}{\numberline {3}Setup e Configurazione}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Installazione del Sistema Operativo}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Abilitazione Modalità USB OTG (HID Gadget)}{4}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Modifica config.txt}{4}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Modifica cmdline.txt}{4}{subsubsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.3}Configurazione HID Gadget via USB}{4}{subsection.3.3}%
+\contentsline {section}{\numberline {4}Sviluppo del Payload}{6}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Approccio Nativo Linux (senza librerie esterne)}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Payload con Esfiltrazione Dati via Rete}{7}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Server C2 (Command \& Control)}{9}{section.5}%
+\contentsline {section}{\numberline {6}Livello 2 -- Controllo Remoto Interattivo}{10}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Architettura}{10}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Script Server sul Pi Zero}{10}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Client sul PC Controller}{11}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Risultati e Demo}{12}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Demo Livello 1 -- Payload Automatico}{12}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Demo Livello 2 -- Controllo Remoto}{12}{subsection.7.2}%
+\contentsline {section}{\numberline {8}Difese e Contromisure}{13}{section.8}%
+\contentsline {subsection}{\numberline {8.1}USBGuard -- Protezione Linux}{13}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Considerazioni Etiche e Legali}{13}{subsection.8.2}%
+\contentsline {section}{\numberline {9}Conclusioni}{14}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Risultati Ottenuti}{14}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Sviluppi Futuri}{14}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Riflessioni}{14}{subsection.9.3}%
+\contentsline {section}{\numberline {A}File di Configurazione Completi}{15}{appendix.Alph1}%
+\contentsline {subsection}{\numberline {A.1}config.txt (sezione rilevante)}{15}{subsection.Alph1.1}%
+\contentsline {subsection}{\numberline {A.2}cmdline.txt}{15}{subsection.Alph1.2}%
+\contentsline {subsection}{\numberline {A.3}Checklist Setup Completo}{15}{subsection.Alph1.3}%
+\contentsline {section}{\numberline {B}Riferimenti}{15}{appendix.Alph2}%
